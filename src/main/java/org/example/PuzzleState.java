@@ -77,7 +77,7 @@ public class PuzzleState {
     }
 
     //przesuniecie 0 w lewo, prawo, gora, dol
-    private PuzzleState moveZero(char d) {
+    PuzzleState moveZero(char d) {
         int newRow = zeroRow;
         int newCol = zeroCol;
 

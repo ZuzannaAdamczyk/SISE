@@ -42,8 +42,8 @@ public class BFS {
             PuzzleState current = queue.poll();
 
 
-            if(current.isGoal())
-                return finalizeResult(result, current);
+            if(current.isGoal()) {
+                return finalizeResult(result, current);}
 
 
             result.processedCount++;
