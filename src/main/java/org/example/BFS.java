@@ -5,11 +5,11 @@ import java.util.*;
 public class BFS {
 
     //fifo
-    private final  Queue<PuzzleState> queue;
+    private final  Queue<PuzzleState> queue = new ArrayDeque<>();
     //zbior odwiedzonych, nie chcemy odwiedzac tego samego stanu wielokrotnie
-    private final  HashSet<PuzzleState> visited;
+    private final  HashSet<PuzzleState> visited = new HashSet<>();
     // mapa rodzicow, mozemy odwtorzyc sciezke ruchow
-    private final Map<PuzzleState, ParentInfo> prev;
+    private final Map<PuzzleState, ParentInfo> prev = new HashMap<>();
     private final char[] order;
 
     private final long startTime;
@@ -19,9 +19,6 @@ public class BFS {
     public BFS(PuzzleState start, String moveOrder) {
 
         this.order = moveOrder.toCharArray();
-        queue = new ArrayDeque<>();
-        visited = new HashSet<>();
-        prev = new HashMap<>();
 
         queue.add(start);
         visited.add(start);

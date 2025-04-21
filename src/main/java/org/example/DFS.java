@@ -4,7 +4,7 @@ import java.util.*;
 
 public class DFS {
 
-    private final static int LIMIT = 20;
+    private static  final int LIMIT = 20;
     private final Deque<PuzzleState> stack = new ArrayDeque<>();
     private final Set<PuzzleState> visited = new HashSet<>();
     private final Map<PuzzleState, ParentInfo> prev = new HashMap<>();
