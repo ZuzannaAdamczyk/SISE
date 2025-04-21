@@ -176,7 +176,7 @@ public class PuzzleState {
                         wrong++;
                     }
                 } else {
-                    if (board[i][j] != shouldBe) {  //pozostale kratki
+                    if (board[i][j] !=0 && board[i][j] != shouldBe) {  //pozostale kratki
                         wrong++;
                     }
 
