@@ -12,8 +12,6 @@ public class BFS {
     private final Map<PuzzleState, ParentInfo> prev = new HashMap<>();
     private final char[] order;
 
-    private final long startTime;
-
 
 
     public BFS(PuzzleState start, String moveOrder) {
@@ -24,7 +22,6 @@ public class BFS {
         visited.add(start);
         //poczatkowy stan start, nie ma rodzica, nie ma ruchu, i 0 glebokosci
         prev.put(start, new ParentInfo(null, 'X', 0));
-        startTime = System.nanoTime();
     }
 
     public SearchResult bfs() {
@@ -60,8 +57,6 @@ public class BFS {
         }
         result.length = - 1;
 
-        //result.time = (System.nanoTime() - startTime) / 1_000_000_000.0;
-        result.time = (System.nanoTime() - startTime) / 1e-9;
         return result;
 
 
@@ -83,8 +78,6 @@ public class BFS {
         Collections.reverse(path);
         result.length = path.size();
         result.moves = path;
-
-        result.time = (System.nanoTime() - startTime) / 1_000_000_000.0;
         return result;
     }
 

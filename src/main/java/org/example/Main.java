@@ -58,12 +58,12 @@ public class Main {
 
     private static PuzzleState readInitialState(String path) throws IOException {
         List<String> lines = Files.readAllLines(Paths.get(path));
-        int rows = lines.size();
-        int cols = lines.get(0).trim().split(" ").length;
+        int rows = Integer.parseInt(lines.getFirst().trim().split(" ")[0]);
+        int cols = Integer.parseInt(lines.getFirst().trim().split(" ")[1]);
         int[][] board = new int[rows][cols];
 
         for (int i = 0; i < rows; i++) {
-            String[] tokens = lines.get(i).trim().split(" ");
+            String[] tokens = lines.get(i+1).trim().split(" ");
             for (int j = 0; j < cols; j++) {
                 board[i][j] = Integer.parseInt(tokens[j]);
             }

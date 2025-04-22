@@ -9,14 +9,12 @@ public class DFS {
     private final Set<PuzzleState> visited = new HashSet<>();
     private final Map<PuzzleState, ParentInfo> prev = new HashMap<>();
     private final char[] order;
-    private final long startTime;
 
     public DFS( PuzzleState start, String moveOrder) {
         this.order = moveOrder.toCharArray();
          stack.push(start);
          visited.add(start);
          prev.put(start, new ParentInfo(null, 'X', 0));
-        startTime = System.nanoTime();
     }
 
 
@@ -48,7 +46,6 @@ public class DFS {
             }
         }
         result.length= -1;
-        result.time = (System.nanoTime() - startTime)* 1e-9;
         return result;
     }
 
@@ -67,7 +64,6 @@ public class DFS {
         result.length = path.size();
         result.moves = path;
         result.maxDepth = Math.max(result.maxDepth, prev.get(goal).depth);
-        result.time = (System.nanoTime() - startTime)* 1e-9;
         return result;
     }
 
