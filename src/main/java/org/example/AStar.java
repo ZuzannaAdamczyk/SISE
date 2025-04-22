@@ -5,7 +5,6 @@ import java.util.PriorityQueue;
 
 public class AStar {
 
-
     private static class Node implements Comparable<Node> {
         final PuzzleState state;
         final int g;
@@ -89,7 +88,6 @@ public class AStar {
             }
         }
         result.length = -1;
-        result.time = (System.nanoTime() - startTime) * 1e-9;
         return result;
     }
 
@@ -105,7 +103,6 @@ public class AStar {
         Collections.reverse(path);
         r.length = path.size();
         r.moves = path;
-        r.time = (System.nanoTime() - startTime) * 1e-9;
         return r;
 
     }

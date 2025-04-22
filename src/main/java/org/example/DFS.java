@@ -4,21 +4,20 @@ import java.util.*;
 
 public class DFS {
 
-    private static  final int LIMIT = 20;
+    private static  final int LIMIT = 30;
     private final Deque<PuzzleState> stack = new ArrayDeque<>();
     private final Set<PuzzleState> visited = new HashSet<>();
     private final Map<PuzzleState, ParentInfo> prev = new HashMap<>();
     private final char[] order;
 
-    public DFS( PuzzleState start, String moveOrder) {
+    public DFS(PuzzleState start, String moveOrder) {
         this.order = moveOrder.toCharArray();
          stack.push(start);
          visited.add(start);
          prev.put(start, new ParentInfo(null, 'X', 0));
     }
 
-
-    public SearchResult dfs( ) {
+    public SearchResult dfs() {
         SearchResult result = new SearchResult();
         result.visitedCount = 1;
 
