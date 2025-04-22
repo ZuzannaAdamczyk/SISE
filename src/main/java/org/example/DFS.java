@@ -4,17 +4,15 @@ import java.util.*;
 
 public class DFS {
 
-    private static  final int LIMIT = 40;
+    private static final int LIMIT = 30;
     private final Deque<PuzzleState> stack = new ArrayDeque<>();
-    private final Set<PuzzleState> visited = new HashSet<>();
     private final Map<PuzzleState, ParentInfo> prev = new HashMap<>();
     private final char[] order;
 
     public DFS(PuzzleState start, String moveOrder) {
         this.order = moveOrder.toCharArray();
-         stack.push(start);
-         visited.add(start);
-         prev.put(start, new ParentInfo(null, 'X', 0));
+        stack.push(start);
+        prev.put(start, new ParentInfo(null, 'X', 0));
     }
 
     public SearchResult dfs() {
@@ -24,49 +22,41 @@ public class DFS {
         while (!stack.isEmpty()) {
             PuzzleState current = stack.pop();
 
+            int depth = prev.get(current).depth;
+            if (depth >= LIMIT) continue;
+
             if (current.isGoal()) {
                 return finalizeResult(result, current);
             }
 
             result.processedCount++;
-            int depth = prev.get(current).depth;
-            if (depth >= LIMIT) {
-                visited.remove(current); // 👈 pamiętaj też tu!
-                continue;
-            }
 
             for (int i = order.length - 1; i >= 0; i--) {
                 char mv = order[i];
                 PuzzleState next = current.moveZero(mv);
                 if (next == null) continue;
 
-                if (!visited.contains(next)) {
-                    visited.add(next);
-                    result.visitedCount++;
-                    prev.put(next, new ParentInfo(current, mv, depth + 1));
-                    result.maxDepth = Math.max(result.maxDepth, depth + 1);
-                    stack.push(next);
-                }
-            }
+                // jesli stan już był w tej ścieżce – pomijamy
+                if (prev.containsKey(next)) continue;
 
-            // aby uniknąć przepełnienia sterty przy większych limitach, w tym momencie nie jest juz potrzebny
-            visited.remove(current);
+                prev.put(next, new ParentInfo(current, mv, depth + 1));
+                result.maxDepth = Math.max(result.maxDepth, depth + 1);
+                result.visitedCount++;
+                stack.push(next);
+            }
         }
 
-        result.length = -1;
+        result.length = -1;  // nie znaleziono rozwiązania
         return result;
     }
 
-
     private SearchResult finalizeResult(SearchResult result, PuzzleState goal) {
         List<Character> path = new ArrayList<>();
-        for(PuzzleState s = goal; ;) {
+        for (PuzzleState s = goal; ; ) {
             ParentInfo p = prev.get(s);
-            if(p == null || p.parent == null) {break;}
+            if (p == null || p.parent == null) break;
             path.add(p.move);
             s = p.parent;
-
-
         }
         Collections.reverse(path);
         result.length = path.size();
@@ -74,6 +64,4 @@ public class DFS {
         result.maxDepth = Math.max(result.maxDepth, prev.get(goal).depth);
         return result;
     }
-
-
 }
