@@ -36,7 +36,6 @@ public class DFS {
                 PuzzleState next = current.moveZero(mv);
                 if (next == null) continue;
 
-                // jesli stan już był w tej ścieżce – pomijamy
                 if (prev.containsKey(next)) continue;
 
                 prev.put(next, new ParentInfo(current, mv, depth + 1));
@@ -46,7 +45,7 @@ public class DFS {
             }
         }
 
-        result.length = -1;  // nie znaleziono rozwiązania
+        result.length = -1;
         return result;
     }
 

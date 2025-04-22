@@ -51,7 +51,6 @@ public class PuzzleState {
         this.zeroCol = puzzleState.zeroCol;
     }
 
-    //sprawdzamy czy uklad jest docelowy
     public boolean isGoal() {
         int expected = 1;
 
@@ -76,7 +75,6 @@ public class PuzzleState {
         return true;
     }
 
-    //przesuniecie 0 w lewo, prawo, gora, dol
     PuzzleState moveZero(char d) {
         int newRow = zeroRow;
         int newCol = zeroCol;
@@ -99,14 +97,13 @@ public class PuzzleState {
 
         }
 
-        // sprawdzamy czy po przesunieciu dalej jestesmy w planszy
         if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols) {
             return null;
         }
 
-        //kopia bieżącego stanu
+
         PuzzleState copy = new PuzzleState(this);
-        //zamieniamy wartosci
+
         int temp = copy.board[copy.zeroRow][copy.zeroCol];
         copy.board[copy.zeroRow][copy.zeroCol] = copy.board[newRow][newCol];
         copy.board[newRow][newCol] = temp;
@@ -117,7 +114,6 @@ public class PuzzleState {
 
     }
 
-    //lista sasiadow w kolejnosci s np RDUL prawo dol gora lewo
     public List<PuzzleNeighbor> getNeighbor(char[] s) {
         List<PuzzleNeighbor> result = new ArrayList<>();
         for (char move : s) {
@@ -166,17 +162,17 @@ public class PuzzleState {
     }
 
     public int hamming() {
-        int wrong = 0; // licznik źle ustawionych klocków
-        int shouldBe = 1; // numer ktory powinien stac w biezacej kratce
+        int wrong = 0;
+        int shouldBe = 1;
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
 
-                if (i == rows - 1 && j == cols - 1) { // ostatnia kratka
-                    if (board[i][j] != 0) { // tu powinno byc 0
+                if (i == rows - 1 && j == cols - 1) {
+                    if (board[i][j] != 0) {
                         wrong++;
                     }
                 } else {
-                    if (board[i][j] !=0 && board[i][j] != shouldBe) {  //pozostale kratki
+                    if (board[i][j] !=0 && board[i][j] != shouldBe) {
                         wrong++;
                     }
 
@@ -198,8 +194,8 @@ public class PuzzleState {
                 if (value == 0) {
                     continue;
                 }
-                int goalRow = (value - 1) / cols; // rzad docelowy
-                int goalCol = (value - 1) % cols; // kolumna docelow
+                int goalRow = (value - 1) / cols;
+                int goalCol = (value - 1) % cols;
 
                 int distance = Math.abs(i - goalRow) + Math.abs(j - goalCol);
 

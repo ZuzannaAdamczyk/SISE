@@ -4,11 +4,8 @@ import java.util.*;
 
 public class BFS {
 
-    //fifo
     private final  Queue<PuzzleState> queue = new ArrayDeque<>();
-    //zbior odwiedzonych, nie chcemy odwiedzac tego samego stanu wielokrotnie
     private final  HashSet<PuzzleState> visited = new HashSet<>();
-    // mapa rodzicow, mozemy odwtorzyc sciezke ruchow
     private final Map<PuzzleState, ParentInfo> prev = new HashMap<>();
     private final char[] order;
 
@@ -20,7 +17,6 @@ public class BFS {
 
         queue.add(start);
         visited.add(start);
-        //poczatkowy stan start, nie ma rodzica, nie ma ruchu, i 0 glebokosci
         prev.put(start, new ParentInfo(null, 'X', 0));
     }
 
@@ -32,7 +28,6 @@ public class BFS {
         result.maxDepth  = 0;
 
         while (!queue.isEmpty()) {
-            // pobieramy z kolejki
             PuzzleState current = queue.poll();
 
 
