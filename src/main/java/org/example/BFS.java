@@ -60,7 +60,8 @@ public class BFS {
         }
         result.length = - 1;
 
-        result.time = (System.nanoTime() - startTime) / 1_000_000_000.0;
+        //result.time = (System.nanoTime() - startTime) / 1_000_000_000.0;
+        result.time = (System.nanoTime() - startTime) / 1e-9;
         return result;
 
 
