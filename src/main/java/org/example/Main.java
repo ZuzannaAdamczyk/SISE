@@ -58,17 +58,26 @@ public class Main {
 
     private static PuzzleState readInitialState(String path) throws IOException {
         List<String> lines = Files.readAllLines(Paths.get(path));
-        int rows = lines.size();
-        int cols = lines.get(0).trim().split(" ").length;
-        int[][] board = new int[rows][cols];
+        String[] first = lines.get(0).trim().split("\\s+");
+        boolean hasHeader = first.length == 2 && first[0].matches("\\d+") && first[1].matches("\\d+");
 
+        int rows, cols, start = 0;
+        if (hasHeader) {
+            rows = Integer.parseInt(first[0]);
+            cols = Integer.parseInt(first[1]);
+            start = 1;                 // dane zaczynają się w drugiej linii
+        } else {
+            rows = lines.size();
+            cols = lines.get(0).trim().split("\\s+").length;
+        }
+
+        int[][] board = new int[rows][cols];
         for (int i = 0; i < rows; i++) {
-            String[] tokens = lines.get(i).trim().split(" ");
+            String[] tokens = lines.get(i + start).trim().split("\\s+");
             for (int j = 0; j < cols; j++) {
                 board[i][j] = Integer.parseInt(tokens[j]);
             }
         }
-
         return new PuzzleState(rows, cols, board);
     }
 
