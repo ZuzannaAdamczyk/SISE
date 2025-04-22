@@ -42,7 +42,7 @@ public class Main {
                 result = new AStar(initial, param).solve();
                 break;
             default:
-                System.err.println("Unknown strategy: " + strategy);
+                System.out.println("Unknown strategy: " + strategy);
                 return;
         }
         long end = System.nanoTime();

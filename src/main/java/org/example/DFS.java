@@ -4,7 +4,7 @@ import java.util.*;
 
 public class DFS {
 
-    private static  final int LIMIT = 30;
+    private static  final int LIMIT = 40;
     private final Deque<PuzzleState> stack = new ArrayDeque<>();
     private final Set<PuzzleState> visited = new HashSet<>();
     private final Map<PuzzleState, ParentInfo> prev = new HashMap<>();
@@ -24,27 +24,36 @@ public class DFS {
         while (!stack.isEmpty()) {
             PuzzleState current = stack.pop();
 
-            if(current.isGoal()) {
+            if (current.isGoal()) {
                 return finalizeResult(result, current);
+            }
 
-        }
-            result.processedCount ++;
+            result.processedCount++;
             int depth = prev.get(current).depth;
-            if(depth >= LIMIT) { continue;}
+            if (depth >= LIMIT) {
+                visited.remove(current); // 👈 pamiętaj też tu!
+                continue;
+            }
 
-            for(int i = order.length - 1; i >= 0; i--) {
-            char mv = order[i];
-            PuzzleState next = current.moveZero(mv);
-            if (next == null ) { continue; }
-            if (visited.add(next)) {
-                result.visitedCount ++;
-                prev.put(next, new ParentInfo(current, mv, depth + 1));
-                result.maxDepth = Math.max(result.maxDepth, depth + 1);
-                stack.push(next);
+            for (int i = order.length - 1; i >= 0; i--) {
+                char mv = order[i];
+                PuzzleState next = current.moveZero(mv);
+                if (next == null) continue;
+
+                if (!visited.contains(next)) {
+                    visited.add(next);
+                    result.visitedCount++;
+                    prev.put(next, new ParentInfo(current, mv, depth + 1));
+                    result.maxDepth = Math.max(result.maxDepth, depth + 1);
+                    stack.push(next);
+                }
             }
-            }
+
+            // aby uniknąć przepełnienia sterty przy większych limitach, w tym momencie nie jest juz potrzebny
+            visited.remove(current);
         }
-        result.length= -1;
+
+        result.length = -1;
         return result;
     }
 
