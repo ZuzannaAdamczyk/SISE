@@ -14,6 +14,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+<<<<<<< HEAD
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -41,4 +42,6 @@
     </dependencies>
 
 
+=======
+>>>>>>> ae6688c04b422be919b4999416a0618b3fcae41b
 </project>
