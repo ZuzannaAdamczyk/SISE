@@ -1,0 +1,4 @@
+hidden_neurons = 10
+activation = tanh # (relu,tanh,sigmoid)
+learning_rate = 0.03
+epochs = 500
