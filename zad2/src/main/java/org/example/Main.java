@@ -31,43 +31,29 @@ public class Main {
         System.out.println("=== EPOKI = " + config.epochs);
         System.out.println("=== WSPÓŁCZYNNIK UCZENIA = " + config.learningRate);
 
+        // Ścieżki do folderów
+        List<String> trainingFolders = Arrays.asList(
+                "data/f8/stat",
+                "data/f10/stat"
+        );
+        List<String> testingFolders = Arrays.asList(
+                "data/f8/dyn",
+                "data/f10/dyn"
+        );
+
         // Wczytaj dane
-        List<double[]> inputList = new ArrayList<>();
-        List<double[]> outputList = new ArrayList<>();
+        DataSet trainData = FileLoader.loadDataFromFolders(trainingFolders);
+        DataSet testData = FileLoader.loadDataFromFolders(testingFolders);
 
-        try (BufferedReader reader = new BufferedReader(new FileReader("data/data.csv"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] tokens = line.split(",");
-                if (tokens.length < 4) continue; // pomijaj błędne linie
-                double xMeasured = Double.parseDouble(tokens[0]);
-                double yMeasured = Double.parseDouble(tokens[1]);
-                double xActual = Double.parseDouble(tokens[2]);
-                double yActual = Double.parseDouble(tokens[3]);
-
-                inputList.add(new double[]{xMeasured, yMeasured});
-                outputList.add(new double[]{xActual, yActual});
-            }
-        }
-
-        INDArray input = Nd4j.create(inputList.toArray(new double[0][]));
-        INDArray labels = Nd4j.create(outputList.toArray(new double[0][]));
-        DataSet allData = new DataSet(input, labels);
-
-        // Skalowanie danych
+        // Normalizacja
         NormalizerMinMaxScaler scaler = new NormalizerMinMaxScaler();
-        scaler.fit(allData);
-        scaler.transform(allData);
+        scaler.fit(trainData);
+        scaler.transform(trainData);
+        scaler.transform(testData);
 
-        // Podział na zbiór treningowy i testowy
-        List<DataSet> list = allData.asList();
-        Collections.shuffle(list, new Random(123));
-        int splitIndex = (int) (0.8 * list.size());
-        List<DataSet> trainList = list.subList(0, splitIndex);
-        List<DataSet> testList = list.subList(splitIndex, list.size());
-
-        DataSetIterator trainIter = new ListDataSetIterator<>(trainList, 5);
-        DataSetIterator testIter = new ListDataSetIterator<>(testList, 5);
+        // Iterator
+        DataSetIterator trainIter = new ListDataSetIterator<>(trainData.asList(), 50);
+        DataSetIterator testIter = new ListDataSetIterator<>(testData.asList(), 50);
 
         // Konfiguracja sieci z parametrami z config
         MultiLayerConfiguration networkConfig = new NeuralNetConfiguration.Builder()
@@ -89,21 +75,94 @@ public class Main {
         MultiLayerNetwork model = new MultiLayerNetwork(networkConfig);
         model.init();
 
-        // Trenowanie modelu
-        for (int epoch = 0; epoch < config.epochs; epoch++) {
-            trainIter.reset();
-            model.fit(trainIter);
+        // === RĘCZNE TRENING I ZAPIS MSE DO CSV ===
+        List<Double> trainMSEList = new ArrayList<>();
+        List<Double> testMSEList = new ArrayList<>();
 
-            double trainMSE = model.score();
-            System.out.printf("Epoka %d - Średni błąd kwadratowy: %.6f%n", epoch + 1, trainMSE);
+        int noImprovementCount = 0;
+        double bestTestScore = Double.MAX_VALUE;  // minimalizujemy MSE, więc zaczynamy od dużej wartości
+
+        for (int epoch = 0; epoch < config.epochs; epoch++) {
+            model.fit(trainIter);
+            trainIter.reset();
+            testIter.reset();
+
+            double trainScore = model.score(trainData);
+            double testScore = model.score(testData);
+
+            trainMSEList.add(trainScore);
+            testMSEList.add(testScore);
+
+            System.out.printf("Epoka %d | Train MSE: %.6f | Test MSE: %.6f%n", epoch + 1, trainScore, testScore);
+
+            // Early stopping logic:
+            if (testScore < bestTestScore) {
+                bestTestScore = testScore;
+                noImprovementCount = 0;
+            } else {
+                noImprovementCount++;
+            }
+
+            if (noImprovementCount >= config.patience) {
+                System.out.println("Brak poprawy test MSE przez " + config.patience + " epok. Przerywam trening.");
+                break;
+            }
         }
 
-        // Testowanie i wypisanie wyników
-        System.out.println("\nTest predictions:");
-        while (testIter.hasNext()) {
-            DataSet ds = testIter.next();
-            INDArray predicted = model.output(ds.getFeatures(), false);
-            System.out.println("=== Predicted === \n" + predicted + "\n=== Actual === \n" + ds.getLabels());
+        // Zapis MSE do pliku CSV
+        try (PrintWriter mseWriter = new PrintWriter(new BufferedWriter(new FileWriter("results/mse_per_epoch_" + config.activation.toString() + ".csv")))) {
+            mseWriter.println("Epoch;TrainMSE;TestMSE");
+            for (int i = 0; i < trainMSEList.size(); i++) {
+                mseWriter.printf("%d;%.8f;%.8f%n", i + 1, trainMSEList.get(i), testMSEList.get(i));
+            }
+        }
+
+        // === TESTOWANIE I ZAPIS WYNIKÓW W ORYGINALNEJ SKALI ===
+        testIter.reset();
+        String resultFilename = "results/results_" + config.activation.toString() + ".csv";
+        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(resultFilename)))) {
+            writer.println("Example;PredX;PredY;ActualX;ActualY;ErrorX;ErrorY;Distance;MeasX;MeasY");
+
+            System.out.println("\nTest predictions (original scale):");
+            int example = 1;
+            while (testIter.hasNext()) {
+                DataSet ds = testIter.next();
+
+                INDArray predictedNorm = model.output(ds.getFeatures(), false);
+                INDArray actualNorm = ds.getLabels();
+                INDArray inputNorm = ds.getFeatures();
+
+                // przywracamy do oryginalnej skali
+                INDArray predicted = predictedNorm.dup();
+                scaler.revertLabels(predicted);
+
+                INDArray actual = actualNorm.dup();
+                scaler.revertLabels(actual);
+
+                INDArray measured = inputNorm.dup();
+                scaler.revertFeatures(measured);
+
+
+                for (int i = 0; i < predicted.rows(); i++) {
+                    double predX = predicted.getDouble(i, 0);
+                    double predY = predicted.getDouble(i, 1);
+                    double actualX = actual.getDouble(i, 0);
+                    double actualY = actual.getDouble(i, 1);
+
+                    double errorX = predX - actualX;
+                    double errorY = predY - actualY;
+                    double distance = Math.sqrt(errorX * errorX + errorY * errorY);
+
+                    double measX = measured.getDouble(i, 0);
+                    double measY = measured.getDouble(i, 1);
+
+
+                    writer.printf("%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f%n",
+                            example, predX, predY, actualX, actualY, errorX, errorY, distance, measX, measY);
+
+                    example++;
+                }
+            }
         }
     }
 }

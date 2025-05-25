@@ -7,16 +7,17 @@ public class Configuration {
     public Activation activation; // "sigmoid", "tanh", "relu"
     public double learningRate;
     public int epochs;
-
-    public Configuration(int hiddenNeurons, String activation, double learningRate, int epochs) {
+    public int patience;
+    public Configuration(int hiddenNeurons, String activation, double learningRate, int epochs, int patience) {
         this.hiddenNeurons = hiddenNeurons;
         this.activation = getActivationFromString(activation);
         this.learningRate = learningRate;
         this.epochs = epochs;
+        this.patience = patience;
     }
 
     public static Configuration defaultConfig() {
-        return new Configuration(10, "relu", 0.01, 100);
+        return new Configuration(10, "relu", 0.01, 100, 10);
     }
 
     private static Activation getActivationFromString(String act) {
