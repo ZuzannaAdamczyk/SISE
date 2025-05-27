@@ -19,12 +19,15 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
+        String configPath = "config.txt";
         // Wczytaj konfigurację
-        Configuration config = ConfigLoader.LoadConfig("config.txt");
+        Configuration config = ConfigLoader.LoadConfig(configPath);
         if (config == null) {
             System.out.println("Nie udało się wczytać konfiguracji. Używam domyślnych wartości.");
             config = Configuration.defaultConfig();
         }
+
+        String resultsDir = "results4";
 
         System.out.println("=== UKRYTE NEURONY = " + config.hiddenNeurons);
         System.out.println("=== FUNKCJA AKTYWACJI = " + config.activation.toString().toUpperCase());
@@ -95,7 +98,7 @@ public class Main {
 
             System.out.printf("Epoka %d | Train MSE: %.6f | Test MSE: %.6f%n", epoch + 1, trainScore, testScore);
 
-            // Early stopping logic:
+            // early stopping logika
             if (testScore < bestTestScore) {
                 bestTestScore = testScore;
                 noImprovementCount = 0;
@@ -110,7 +113,7 @@ public class Main {
         }
 
         // Zapis MSE do pliku CSV
-        try (PrintWriter mseWriter = new PrintWriter(new BufferedWriter(new FileWriter("results/mse_per_epoch_" + config.activation.toString() + ".csv")))) {
+        try (PrintWriter mseWriter = new PrintWriter(new BufferedWriter(new FileWriter(resultsDir+"/mse_per_epoch_" + config.activation.toString() + ".csv")))) {
             mseWriter.println("Epoch;TrainMSE;TestMSE");
             for (int i = 0; i < trainMSEList.size(); i++) {
                 mseWriter.printf("%d;%.8f;%.8f%n", i + 1, trainMSEList.get(i), testMSEList.get(i));
@@ -119,7 +122,7 @@ public class Main {
 
         // === TESTOWANIE I ZAPIS WYNIKÓW W ORYGINALNEJ SKALI ===
         testIter.reset();
-        String resultFilename = "results/results_" + config.activation.toString() + ".csv";
+        String resultFilename = resultsDir+"/results_" + config.activation.toString() + ".csv";
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(resultFilename)))) {
             writer.println("Example;PredX;PredY;ActualX;ActualY;ErrorX;ErrorY;Distance;MeasX;MeasY");
 

@@ -1,0 +1,5 @@
+hidden_neurons = 15
+activation = relu # (relu,tanh,sigmoid)
+learning_rate = 0.02
+epochs = 120
+patience = 10 # (early stopping)
