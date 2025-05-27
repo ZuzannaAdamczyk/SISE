@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 
 activation_functions = ["RELU", "TANH", "SIGMOID"]
 
+colors_pred = {"RELU": "blue", "TANH": "orange", "SIGMOID": "purple"}
+markers = {"RELU": "o", "TANH": "^", "SIGMOID": "s"}
+
 mse_data = {}
 results_data = {}
 
@@ -22,7 +25,7 @@ for act in activation_functions:
     ymin_train = train_mse[-last_epochs:].min()
     ymin_test = test_mse[-last_epochs:].min()
     ymax_train = max(ymax_train, 1.2 * ymin_train)
-    ymax_test = max(ymax_test, 1.2 * ymin_test)
+    #ymax_test = max(ymax_test, 1.2 * ymin_test)
 
 # --- 1. Wykres MSE na zbiorze uczącym dla wszystkich aktywacji ---
 plt.figure(figsize=(10,6))
@@ -32,7 +35,7 @@ for act in activation_functions:
     train_mse = mse_data[act]["TrainMSE"]
     plt.plot(epochs, train_mse, label=f'Train MSE {act}')
 
-plt.ylim(0, 600000)
+plt.ylim(0, 800000)
 plt.xlabel("Epoka")
 plt.ylabel("Błąd MSE (zbiór uczący)")
 plt.title("Błąd średniokwadratowy na zbiorze uczącym")
@@ -59,7 +62,7 @@ actual_y = results_data["RELU"]["ActualY"].values
 mse_measured = np.mean((meas_x - actual_x)**2 + (meas_y - actual_y)**2)
 plt.axhline(y=mse_measured, color='green', linestyle='--', label=f'MSE pomiarów (referencja) = {mse_measured:.2f}')
 
-plt.ylim(0, ymax_test)
+plt.ylim(0, 800000)
 plt.xlabel("Epoka")
 plt.ylabel("Błąd MSE (zbiór testowy)")
 plt.title("Błąd średniokwadratowy na zbiorze testowym")
@@ -94,30 +97,37 @@ plt.grid(True)
 plt.xscale("linear")  # Możesz zmienić na "log" jeśli trzeba
 plt.legend()
 plt.show()
+# --- 4. Wykres punktowy tylko dla aktywacji z najmniejszym końcowym MSE testowym ---
 
-# --- 4. Wykres punktowy: wartości skorygowane (predykcje), zmierzone i rzeczywiste ---
+# Znajdź aktywację z najmniejszym końcowym MSE testowym
+min_mse = float('inf')
+best_act = None
+
+for act in activation_functions:
+    final_test_mse = mse_data[act]["TestMSE"].iloc[-1]
+    if final_test_mse < min_mse:
+        min_mse = final_test_mse
+        best_act = act
+
+print(f"Najlepsza funkcja aktywacji wg MSE: {best_act} (MSE = {min_mse:.6f})")
+
+# Dane do wykresu
+pred_x = results_data[best_act]["PredX"].values
+pred_y = results_data[best_act]["PredY"].values
 
 plt.figure(figsize=(12,8))
 
-markers = {"RELU":"o", "TANH":"^", "SIGMOID":"s"}
-sizes = {"RELU":4, "TANH":4, "SIGMOID":4}
-alphas = {"RELU":0.3, "TANH":0.3, "SIGMOID":0.3}
-colors_pred = {"RELU":"blue", "TANH":"orange", "SIGMOID":"purple"}
-
-# Wartości zmierzone i rzeczywiste tylko raz (z RELU)
+# Wartości zmierzone i rzeczywiste (tylko raz, z RELU – bo i tak są wspólne)
 plt.scatter(meas_x, meas_y, label="Wartości zmierzone", alpha=0.7, s=5, c='black', zorder=1)
 plt.scatter(actual_x, actual_y, label="Wartości rzeczywiste", alpha=0.7, s=3, c='green', marker='x', zorder=3)
 
-# Wartości skorygowane (predykcje) dla każdej aktywacji
-for act in activation_functions:
-    pred_x = results_data[act]["PredX"].values
-    pred_y = results_data[act]["PredY"].values
-    plt.scatter(pred_x, pred_y, label=f"Wartości skorygowane ({act})",
-                alpha=alphas[act], s=sizes[act], c=colors_pred[act], marker=markers[act], zorder=2)
+# Predykcje tylko dla najlepszej aktywacji
+plt.scatter(pred_x, pred_y, label=f"Wartości skorygowane ({best_act})",
+            alpha=0.4, s=4, c=colors_pred[best_act], marker=markers[best_act], zorder=2)
 
 plt.xlabel("X")
 plt.ylabel("Y")
-plt.title("Wartości pomiarów dynamicznych - porównanie wariantów aktywacji")
+plt.title(f"Najlepszy wariant aktywacji: {best_act} (najniższy MSE testowy {min_mse:.4f})")
 plt.legend()
 plt.grid(True)
 plt.show()

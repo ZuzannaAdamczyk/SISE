@@ -27,7 +27,10 @@ public class Main {
             config = Configuration.defaultConfig();
         }
 
-        String resultsDir = "results4";
+        String resultsDir = "results6";
+        if(new File(resultsDir).mkdir()){
+            System.out.println("Utworzono folder: " + resultsDir);
+        }
 
         System.out.println("=== UKRYTE NEURONY = " + config.hiddenNeurons);
         System.out.println("=== FUNKCJA AKTYWACJI = " + config.activation.toString().toUpperCase());
@@ -49,14 +52,15 @@ public class Main {
         DataSet testData = FileLoader.loadDataFromFolders(testingFolders);
 
         // Normalizacja
-        NormalizerMinMaxScaler scaler = new NormalizerMinMaxScaler();
+        NormalizerMinMaxScaler scaler = new NormalizerMinMaxScaler(0, 1);
+        scaler.fitLabel(true);
         scaler.fit(trainData);
         scaler.transform(trainData);
         scaler.transform(testData);
 
         // Iterator
-        DataSetIterator trainIter = new ListDataSetIterator<>(trainData.asList(), 50);
-        DataSetIterator testIter = new ListDataSetIterator<>(testData.asList(), 50);
+        DataSetIterator trainIter = new ListDataSetIterator<>(trainData.asList(), 8);
+        DataSetIterator testIter = new ListDataSetIterator<>(testData.asList(), 8);
 
         // Konfiguracja sieci z parametrami z config
         MultiLayerConfiguration networkConfig = new NeuralNetConfiguration.Builder()
@@ -78,7 +82,7 @@ public class Main {
         MultiLayerNetwork model = new MultiLayerNetwork(networkConfig);
         model.init();
 
-        // === RĘCZNE TRENING I ZAPIS MSE DO CSV ===
+
         List<Double> trainMSEList = new ArrayList<>();
         List<Double> testMSEList = new ArrayList<>();
 
@@ -90,15 +94,15 @@ public class Main {
             trainIter.reset();
             testIter.reset();
 
-            double trainScore = model.score(trainData);
-            double testScore = model.score(testData);
+            double trainScore = calculateMSE(model, trainData);
+            double testScore = calculateMSE(model, testData);
 
             trainMSEList.add(trainScore);
             testMSEList.add(testScore);
 
             System.out.printf("Epoka %d | Train MSE: %.6f | Test MSE: %.6f%n", epoch + 1, trainScore, testScore);
 
-            // early stopping logika
+            // early stopping
             if (testScore < bestTestScore) {
                 bestTestScore = testScore;
                 noImprovementCount = 0;
@@ -167,5 +171,17 @@ public class Main {
                 }
             }
         }
+    }
+
+
+    public static double calculateMSE(MultiLayerNetwork model, DataSet dataSet) {
+        INDArray predictions = model.output(dataSet.getFeatures(), false);
+        INDArray labels = dataSet.getLabels();
+
+        INDArray diff = predictions.sub(labels);
+        INDArray squaredDiff = diff.mul(diff);
+
+        // srednia po wszystkich elemetnach macierzy
+        return squaredDiff.meanNumber().doubleValue();
     }
 }
