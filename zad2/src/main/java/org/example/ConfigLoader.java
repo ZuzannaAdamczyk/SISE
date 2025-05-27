@@ -29,8 +29,10 @@ public class ConfigLoader {
             double learningRate = Double.parseDouble(configMap.getOrDefault("learning_rate", "0.01"));
             int epochs = Integer.parseInt(configMap.getOrDefault("epochs", "100"));
             int patience = Integer.parseInt(configMap.getOrDefault("patience", "10"));
+            int batchSize = Integer.parseInt(configMap.getOrDefault("batch_size", "32"));
 
-            return new Configuration(hiddenNeurons, activation, learningRate, epochs, patience);
+
+            return new Configuration(hiddenNeurons, activation, learningRate, epochs, patience, batchSize);
         } catch (Exception e) {
             System.err.println("Błąd w danych konfiguracyjnych, użyto wartości domyślnych.");
             return null;

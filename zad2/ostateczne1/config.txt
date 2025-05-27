@@ -1,6 +1,5 @@
 hidden_neurons = 10
 activation = relu # (relu,tanh,sigmoid)
-learning_rate = 0.0006
+learning_rate = 0.0008
 epochs = 200
-patience = 5 # (early stopping)
-batch_size = 64
+patience = 15 # (early stopping)

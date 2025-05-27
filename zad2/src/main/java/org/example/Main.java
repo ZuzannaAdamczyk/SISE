@@ -3,14 +3,15 @@ package org.example;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.utilty.ListDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 
 import java.io.*;
 import java.util.*;
@@ -18,7 +19,6 @@ import java.util.*;
 public class Main {
 
     public static void main(String[] args) throws IOException {
-
         String configPath = "config.txt";
         // Wczytaj konfigurację
         Configuration config = ConfigLoader.LoadConfig(configPath);
@@ -27,8 +27,8 @@ public class Main {
             config = Configuration.defaultConfig();
         }
 
-        String resultsDir = "results6";
-        if(new File(resultsDir).mkdir()){
+        String resultsDir = "ostateczne5plsrelu";
+        if (new File(resultsDir).mkdir()) {
             System.out.println("Utworzono folder: " + resultsDir);
         }
 
@@ -36,6 +36,8 @@ public class Main {
         System.out.println("=== FUNKCJA AKTYWACJI = " + config.activation.toString().toUpperCase());
         System.out.println("=== EPOKI = " + config.epochs);
         System.out.println("=== WSPÓŁCZYNNIK UCZENIA = " + config.learningRate);
+        System.out.println("=== CIERPLIWOŚĆ = " + config.patience);
+        System.out.println("=== BATCH SIZE = " + config.batchSize);
 
         // Ścieżki do folderów
         List<String> trainingFolders = Arrays.asList(
@@ -47,29 +49,30 @@ public class Main {
                 "data/f10/dyn"
         );
 
-        // Wczytaj dane
+        // wczytujemy dane
         DataSet trainData = FileLoader.loadDataFromFolders(trainingFolders);
         DataSet testData = FileLoader.loadDataFromFolders(testingFolders);
 
-        // Normalizacja
-        NormalizerMinMaxScaler scaler = new NormalizerMinMaxScaler(0, 1);
-        scaler.fitLabel(true);
-        scaler.fit(trainData);
-        scaler.transform(trainData);
-        scaler.transform(testData);
+        // normalizacja danych
+        NormalizerStandardize normalizer = new NormalizerStandardize();
+        normalizer.fitLabel(true);
+        normalizer.fit(trainData);          // uczymy normalizator na danych treningowych
+        normalizer.transform(trainData);    // normalizujemy dane treningowe
+        normalizer.transform(testData);     // normalizujemy dane testowe
 
-        // Iterator
-        DataSetIterator trainIter = new ListDataSetIterator<>(trainData.asList(), 8);
-        DataSetIterator testIter = new ListDataSetIterator<>(testData.asList(), 8);
+        // iteratory na danych przeskalowanych
+        DataSetIterator trainIter = new ListDataSetIterator<>(trainData.asList(), config.batchSize);
+        DataSetIterator testIter = new ListDataSetIterator<>(testData.asList(), config.batchSize);
 
-        // Konfiguracja sieci z parametrami z config
+        // konfiguracja sieci z parametrami z config.txt
         MultiLayerConfiguration networkConfig = new NeuralNetConfiguration.Builder()
-                .seed(123)
+                .seed(123456)
                 .updater(new Adam(config.learningRate))
                 .list()
                 .layer(new DenseLayer.Builder()
                         .nIn(2)
                         .nOut(config.hiddenNeurons)
+                        .weightInit(WeightInit.XAVIER)
                         .activation(config.activation)
                         .build())
                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
@@ -82,20 +85,20 @@ public class Main {
         MultiLayerNetwork model = new MultiLayerNetwork(networkConfig);
         model.init();
 
-
         List<Double> trainMSEList = new ArrayList<>();
         List<Double> testMSEList = new ArrayList<>();
 
+
         int noImprovementCount = 0;
-        double bestTestScore = Double.MAX_VALUE;  // minimalizujemy MSE, więc zaczynamy od dużej wartości
+        double bestTestScore = Double.MAX_VALUE;
 
         for (int epoch = 0; epoch < config.epochs; epoch++) {
-            model.fit(trainIter);
             trainIter.reset();
-            testIter.reset();
+            model.fit(trainIter);
 
-            double trainScore = calculateMSE(model, trainData);
-            double testScore = calculateMSE(model, testData);
+
+            double trainScore = model.score(trainData);
+            double testScore = model.score(testData);
 
             trainMSEList.add(trainScore);
             testMSEList.add(testScore);
@@ -117,16 +120,16 @@ public class Main {
         }
 
         // Zapis MSE do pliku CSV
-        try (PrintWriter mseWriter = new PrintWriter(new BufferedWriter(new FileWriter(resultsDir+"/mse_per_epoch_" + config.activation.toString() + ".csv")))) {
+        try (PrintWriter mseWriter = new PrintWriter(resultsDir + "/mse_per_epoch_" + config.activation + ".csv")) {
             mseWriter.println("Epoch;TrainMSE;TestMSE");
             for (int i = 0; i < trainMSEList.size(); i++) {
-                mseWriter.printf("%d;%.8f;%.8f%n", i + 1, trainMSEList.get(i), testMSEList.get(i));
+                mseWriter.println((i + 1) + ";" + trainMSEList.get(i) + ";" + testMSEList.get(i));
             }
         }
 
-        // === TESTOWANIE I ZAPIS WYNIKÓW W ORYGINALNEJ SKALI ===
+        // TESTOWANIE I ZAPIS WYNIKÓW (W ORYGINALNEJ SKALI)
         testIter.reset();
-        String resultFilename = resultsDir+"/results_" + config.activation.toString() + ".csv";
+        String resultFilename = resultsDir + "/results_" + config.activation.toString() + ".csv";
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(resultFilename)))) {
             writer.println("Example;PredX;PredY;ActualX;ActualY;ErrorX;ErrorY;Distance;MeasX;MeasY");
 
@@ -135,34 +138,33 @@ public class Main {
             while (testIter.hasNext()) {
                 DataSet ds = testIter.next();
 
-                INDArray predictedNorm = model.output(ds.getFeatures(), false);
-                INDArray actualNorm = ds.getLabels();
-                INDArray inputNorm = ds.getFeatures();
+                INDArray predicted = model.output(ds.getFeatures(), false);
+                INDArray actual = ds.getLabels();
+                INDArray measured = ds.getFeatures();
 
-                // przywracamy do oryginalnej skali
-                INDArray predicted = predictedNorm.dup();
-                scaler.revertLabels(predicted);
+                // Tworzymy kopie do odwrócenia normalizacji
 
-                INDArray actual = actualNorm.dup();
-                scaler.revertLabels(actual);
+                INDArray predictedUnscaled = predicted.dup().castTo(DataType.DOUBLE);
+                INDArray actualUnscaled = actual.dup().castTo(DataType.DOUBLE);
+                INDArray measuredUnscaled = measured.dup().castTo(DataType.DOUBLE);
 
-                INDArray measured = inputNorm.dup();
-                scaler.revertFeatures(measured);
+                // Odwracamy normalizację na etykietach i cechach
+                normalizer.revertLabels(predictedUnscaled);
+                normalizer.revertLabels(actualUnscaled);
+                normalizer.revertFeatures(measuredUnscaled);
 
-
-                for (int i = 0; i < predicted.rows(); i++) {
-                    double predX = predicted.getDouble(i, 0);
-                    double predY = predicted.getDouble(i, 1);
-                    double actualX = actual.getDouble(i, 0);
-                    double actualY = actual.getDouble(i, 1);
+                for (int i = 0; i < predictedUnscaled.rows(); i++) {
+                    double predX = predictedUnscaled.getDouble(i, 0);
+                    double predY = predictedUnscaled.getDouble(i, 1);
+                    double actualX = actualUnscaled.getDouble(i, 0);
+                    double actualY = actualUnscaled.getDouble(i, 1);
 
                     double errorX = predX - actualX;
                     double errorY = predY - actualY;
                     double distance = Math.sqrt(errorX * errorX + errorY * errorY);
 
-                    double measX = measured.getDouble(i, 0);
-                    double measY = measured.getDouble(i, 1);
-
+                    double measX = measuredUnscaled.getDouble(i, 0);
+                    double measY = measuredUnscaled.getDouble(i, 1);
 
                     writer.printf("%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f%n",
                             example, predX, predY, actualX, actualY, errorX, errorY, distance, measX, measY);
@@ -171,17 +173,7 @@ public class Main {
                 }
             }
         }
+
     }
 
-
-    public static double calculateMSE(MultiLayerNetwork model, DataSet dataSet) {
-        INDArray predictions = model.output(dataSet.getFeatures(), false);
-        INDArray labels = dataSet.getLabels();
-
-        INDArray diff = predictions.sub(labels);
-        INDArray squaredDiff = diff.mul(diff);
-
-        // srednia po wszystkich elemetnach macierzy
-        return squaredDiff.meanNumber().doubleValue();
-    }
 }
