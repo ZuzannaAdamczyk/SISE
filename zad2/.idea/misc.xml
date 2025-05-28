@@ -8,5 +8,5 @@
       </list>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.7 (zad2)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="openjdk-23" project-jdk-type="JavaSDK" />
 </project>
